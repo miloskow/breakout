@@ -18,6 +18,7 @@ class Health(object):
         self.x = x
         self.y = y
         self.amount = amount
+        self.max_amount = 6
         self.hearts = []
         for i in range(0, self.amount):
             self.hearts.append(Heart(i * 64, 0))
@@ -32,3 +33,10 @@ class Health(object):
             self.hearts.pop()
             self.amount -= 1
         return self.amount <= 0
+
+    def gain_life(self):
+        global run
+        if self.amount < self.max_amount:
+            self.hearts.append(Heart(self.amount * 64, 0))
+            self.amount += 1
+        

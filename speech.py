@@ -1,55 +1,67 @@
 import speech_recognition as sr
 import time
-import threading
-import pygame
 
-pygame.init()
-WIDTH = 350
-HEIGHT = 150
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-running = True
 
-def recognize_voice_command(recognizer, microphone):
-    with microphone as source:
-        recognizer.adjust_for_ambient_noise(source)
-        print("Listening for a command...")
-        audio = recognizer.listen(source, timeout=3, phrase_time_limit=2)
+class SpeechRec:
+    def __init__(self):
+        self.recognizer = sr.Recognizer()
+        self.working = True
+        
+
         try:
-            command = recognizer.recognize_google(audio)
-            print("You said: " + command)
-            return command.lower()
-        except sr.UnknownValueError:
-            print("Audio couldnt be understood.")
+            self.microphone = sr.Microphone()
+        except OSError:
+            print("No microphone detected. Voice commands disabled.")
+            self.working = False
+            self.microphone = None
+
+    def recognize_voice_command(self):
+        if not self.microphone:
             return None
 
-def handle_voice_commands(recognizer, microphone):
-    global running
-    while running:
+        with self.microphone as source:
+            print("Kalibracja mikrofonu...")
+            self.recognizer.adjust_for_ambient_noise(source, duration=0.5)
+
+            print("Nasłuchiwanie...")
+            try:
+                audio = self.recognizer.listen(
+                    source,
+                    timeout=5,
+                    phrase_time_limit=3
+                )
+            except sr.WaitTimeoutError:
+                print("Timeout — nic nie powiedziano.")
+                return None
+
         try:
-            command = recognize_voice_command(recognizer, microphone)
-            if command:
-                if "quit" in command:
-                    running = False
-                elif "hello" in command:
-                    print("Hello there!")
-                    
-        except sr.WaitTimeoutError:
-            print("Listening timed out while waiting for a phrase to start")
+            command = self.recognizer.recognize_google(
+                audio,
+            )
+
+            command = command.lower()
+            print("Powiedziałeś:", command)
+            return command
+
+        except sr.UnknownValueError:
+            print("Nie rozpoznano mowy.")
+            return None
+
         except sr.RequestError as e:
-            print(f"Could not request results, {e}")
+            print(f"Błąd API: {e}")
+            return None
 
-        time.sleep(0.1)
+    def handle_voice_commands(self):
+        while self.working:
+            command = self.recognize_voice_command()
 
-recognizer = sr.Recognizer()
-microphone = sr.Microphone()
+            if command:
+                if "stop" in command:
+                    self.working = False
+                    return "stop"
 
-voice_thread = threading.Thread(target=handle_voice_commands, args=(recognizer,microphone))
-voice_thread.start()
+                return command
 
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+            time.sleep(0.1)
 
-pygame.quit()
-voice_thread.join()
+        return ""

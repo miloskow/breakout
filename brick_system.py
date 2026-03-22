@@ -15,9 +15,13 @@ def check_brick_collision(level):
                 level.ball.x_velocity *= -1
 
             if brick.special:
-                level.random_paddle_change()
+                level.sfx["secret"].play()
+                level.current_brick = brick
+                level.state = "quizzing"
+                return
 
             level.bricks.remove(brick)
+            level.points += 1
             break
 
 
